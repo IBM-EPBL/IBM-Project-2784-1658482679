@@ -1,21 +1,13 @@
-import numpy as np
-from flask import Flask, request, jsonify, render_template
-import joblib
-import requests
-
-# NOTE: you must manually set API_KEY below using information retrieved from your IBM Cloud account.
-API_KEY = "6LfbCZ72apZnwHTs9njb0wj2UlpLWNDPIk8wEN8ayRAH"
-token_response = requests.post('https://iam.cloud.ibm.com/identity/token', data={"apikey":API_KEY, "grant_type": 'urn:ibm:params:oauth:grant-type:apikey'})
-mltoken = token_response.json()["access_token"]
-
-
 from flask import render_template,Flask,request
 import pickle
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 import pandas as pd
-
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 dt = pd.read_csv(r"C:/Users/NIVEDITHA/Downloads/Crop_recommendation.csv")
   
@@ -32,11 +24,30 @@ knn = GaussianNB()
   
 knn.fit(X_train.reshape(-1,1), y_train)
 pred=knn.predict(X_test.reshape(-1,1))
- 
+print(accuracy_score(y_test,pred))
+  
+
 
 
 appl=Flask(__name__)
-
+file=open("model.pkl","rb")
+file1=open("model1.pkl","rb")
+file2=open("model2.pkl","rb")
+file3=open("model3.pkl","rb")
+file4=open("model4.pkl","rb")
+file5=open("model5.pkl","rb")
+random_Forest=pickle.load(file)
+file.close()
+random_Forest1=pickle.load(file1)
+file1.close()
+random_Forest2=pickle.load(file2)
+file2.close()
+random_Forest3=pickle.load(file3)
+file3.close()
+random_Forest4=pickle.load(file4)
+file4.close()
+random_Forest5=pickle.load(file5)
+file5.close()
 
 #random_Forest=pickle.load(file)
 #file.close()
@@ -49,36 +60,25 @@ def home():
         myDict = request.form
         Month = int(myDict["Month"])
         state= (myDict["state"])
-        xtest=[[Month]]
-        if (state=="TAMILNADU"):
-            payload_scoring = {"input_data": [{"field": [['Month']], "values": xtest}]}
-            response_scoring = requests.post('https://us-south.ml.cloud.ibm.com/ml/v4/deployments/b9911f2a-8c37-43ff-86ca-5857254f4cb3/predictions?version=2022-11-21', json=payload_scoring,headers={'Authorization': 'Bearer ' + mltoken})
-            print(response_scoring)
-            predic=response_scoring.json()
-            predic2=round(predic['predictions'][0]['values'][0][0],2)
-            print(predic2)        
+        pred = [Month]
+        #stateCall(state)
+        #res=random_Forest.predict([pred])[0]
+        if(state=="TAMILNADU"):
+            res=random_Forest.predict([pred])[0]
+        elif state=="WEST BENGAL":
+            res=random_Forest1.predict([pred])[0]
+        elif(state=="ORISSA"):
+            res=random_Forest2.predict([pred])[0]
+        elif(state=="PUNJAB"):
+            res=random_Forest3.predict([pred])[0]
+        elif(state=="UTTARAKHAND"):
+            res=random_Forest4.predict([pred])[0]
         else:
-            payload_scoring = {"input_data": [{"field": [['Month']], "values": xtest}]}
-            response_scoring = requests.post('https://us-south.ml.cloud.ibm.com/ml/v4/deployments/6be082f6-3e57-4824-9a76-4bbbdea23f45/predictions?version=2022-11-21', json=payload_scoring,headers={'Authorization': 'Bearer ' + mltoken})
-            print(response_scoring)
-            predic=response_scoring.json()
-            predic2=round(predic['predictions'][0]['values'][0][0],2)
-            print(predic2) 
-        
-        ans=knn.predict([[predic2]])[0]
-        return render_template('result.html',Month=Month,state=state,res=predic2,ans=ans)
+            res=random_Forest5.predict([pred])[0]
+        res=round(res,2)
+        ans=knn.predict([[res]])[0]
+        return render_template('result.html',Month=Month,state=state,res=res,ans=ans)
     return render_template('index.html')
 
 if __name__ == "__main__":
     appl.run(debug=True)
-
-
-
-
-
-
-
-
-
-
-    
